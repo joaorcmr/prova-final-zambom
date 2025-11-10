@@ -2,7 +2,7 @@
 FROM node:20-bullseye AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev=false
+RUN npm ci
 COPY . .
 RUN npm run build
 

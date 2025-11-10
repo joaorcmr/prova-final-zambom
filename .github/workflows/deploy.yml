@@ -8,6 +8,18 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      SERVICE: prova-final-zambom-api
+      IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/nest-images/prova-final-zambom-api:latest
+
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
 
     steps:
       - name: Checkout
@@ -23,28 +35,24 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Definir variáveis de ambiente
+      - name: Build & Push (Cloud Build → Artifact Registry)
         run: |
-            echo "SERVICE=prova-final-zambom-api" >> $GITHUB_ENV
-            echo "NODE_ENV=production" >> $GITHUB_ENV
-            echo "DB_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
-            echo "FB_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> $GITHUB_ENV
-            echo "FB_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> $GITHUB_ENV
-            echo "FB_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> $GITHUB_ENV
-          
+          set -euo pipefail
+          gcloud builds submit \
+            --project="${GCP_PROJECT_ID}" \
+            --region="${GCP_REGION}" \
+            --tag "${IMAGE}" .
 
-      - name: Build with Cloud Build
+      - name: Deploy to Cloud Run (cria se não existir)
         run: |
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/nest-images/prova-final-zambom-api:latest"
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-          gcloud builds submit --tag "$IMAGE" .
-
-      - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy "$SERVICE" \
-            --image "$IMAGE" \
-            --region ${{ secrets.GCP_REGION }} \
+          set -euo pipefail
+          gcloud run deploy "${SERVICE}" \
+            --image "${IMAGE}" \
+            --project "${GCP_PROJECT_ID}" \
+            --region "${GCP_REGION}" \
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars "NODE_ENV=$NODE_ENV,DATABASE_URL=$DB_URL,JWT_SECRET=$JWT,FIREBASE_PROJECT_ID=$FB_PROJECT_ID,FIREBASE_CLIENT_EMAIL=$FB_CLIENT_EMAIL,FIREBASE_PRIVATE_KEY=$FB_PRIVATE_KEY"
+            --set-env-vars "NODE_ENV=${NODE_ENV},DATABASE_URL=${DATABASE_URL},JWT_SECRET=${JWT_SECRET},FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL},FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}"
+            # Se quiser usar uma SA específica no Cloud Run, descomente e ajuste:
+            # --service-account=cloud-run-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com

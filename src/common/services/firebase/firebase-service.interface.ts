@@ -1,5 +1,3 @@
-import { DecodedIdToken } from 'firebase-admin/auth';
-
 export const FIREBASE_SERVICE = Symbol('FIREBASE_SERVICE');
 
 export interface FirebaseUser {

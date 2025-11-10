@@ -8,12 +8,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     env:
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_REGION: ${{ secrets.GCP_REGION }}
       SERVICE: prova-final-zambom-api
       IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/nest-images/prova-final-zambom-api:latest
-
       NODE_ENV: production
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
@@ -25,6 +23,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate SA key JSON
+        run: |
+          echo '${{ secrets.GCP_SA_KEY }}' | jq -e .type >/dev/null
+
       - name: Auth to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -35,24 +37,24 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Build & Push (Cloud Build → Artifact Registry)
+      - name: Build & Push (Cloud Build)
         run: |
           set -euo pipefail
           gcloud builds submit \
-            --project="${GCP_PROJECT_ID}" \
-            --region="${GCP_REGION}" \
+            --project="${{ secrets.GCP_PROJECT_ID }}" \
+            --region="${{ secrets.GCP_REGION }}" \
             --tag "${IMAGE}" .
 
-      - name: Deploy to Cloud Run (cria se não existir)
+      - name: Deploy to Cloud Run
         run: |
           set -euo pipefail
           gcloud run deploy "${SERVICE}" \
             --image "${IMAGE}" \
-            --project "${GCP_PROJECT_ID}" \
-            --region "${GCP_REGION}" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --region "${{ secrets.GCP_REGION }}" \
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
             --set-env-vars "NODE_ENV=${NODE_ENV},DATABASE_URL=${DATABASE_URL},JWT_SECRET=${JWT_SECRET},FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL},FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}"
-            # Se quiser usar uma SA específica no Cloud Run, descomente e ajuste:
-            # --service-account=cloud-run-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+            # Se quiser usar uma SA específica do Cloud Run, descomente:
+            # --service-account=cloud-run-sa@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com

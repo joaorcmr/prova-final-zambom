@@ -46,12 +46,27 @@ export class EnvService implements IEnvService {
       };
     }
 
-    this.firebase = {
-      projectId: _configService.getOrThrow<string>('FIREBASE_PROJECT_ID'),
-      privateKey: _configService
-        .getOrThrow<string>('FIREBASE_PRIVATE_KEY')
-        .replace(/\\n/g, '\n'),
-      clientEmail: _configService.getOrThrow<string>('FIREBASE_CLIENT_EMAIL'),
-    };
+    const firebaseProjectId = _configService.get<string>('FIREBASE_PROJECT_ID');
+    const firebasePrivateKey = _configService.get<string>(
+      'FIREBASE_PRIVATE_KEY',
+    );
+    const firebaseClientEmail = _configService.get<string>(
+      'FIREBASE_CLIENT_EMAIL',
+    );
+
+    if (firebaseProjectId && firebasePrivateKey && firebaseClientEmail) {
+      this.firebase = {
+        projectId: firebaseProjectId,
+        privateKey: firebasePrivateKey.replace(/\\n/g, '\n'),
+        clientEmail: firebaseClientEmail,
+      };
+    } else {
+      // Valores padrão quando Firebase não está configurado
+      this.firebase = {
+        projectId: '',
+        privateKey: '',
+        clientEmail: '',
+      };
+    }
   }
 }

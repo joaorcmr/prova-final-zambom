@@ -23,10 +23,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate SA key JSON
-        run: |
-          echo '${{ secrets.GCP_SA_KEY }}' | jq -e .type >/dev/null
-
       - name: Auth to Google Cloud
         uses: google-github-actions/auth@v2
         with:

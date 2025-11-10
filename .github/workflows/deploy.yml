@@ -25,10 +25,9 @@ jobs:
 
       - name: Definir variáveis de ambiente
         run: |
-            echo "SERVICE=fit-bro-api" >> $GITHUB_ENV
+            echo "SERVICE=prova-final-zambom-api" >> $GITHUB_ENV
             echo "NODE_ENV=production" >> $GITHUB_ENV
             echo "DB_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
-            echo "JWT=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
             echo "FB_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> $GITHUB_ENV
             echo "FB_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> $GITHUB_ENV
             echo "FB_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> $GITHUB_ENV
@@ -36,7 +35,7 @@ jobs:
 
       - name: Build with Cloud Build
         run: |
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/nest-images/fit-bro-api:latest"
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/nest-images/prova-final-zambom-api:latest"
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
           gcloud builds submit --tag "$IMAGE" .
 
